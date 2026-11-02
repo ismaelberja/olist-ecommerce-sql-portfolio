@@ -1,0 +1,14 @@
+# Do not republish Olist's source data, and avoid committing large SQLite databases.
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/README.md
+data/*.db
+data/*.sqlite
+reports/generated/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.DS_Store
+.ipynb_checkpoints/
