@@ -1,0 +1,86 @@
+name: Publish verified Olist analysis
+on:
+  push:
+    paths:
+      - '.github/workflows/publish_results.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  analyze-real-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download Olist dataset from pinned public mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data/raw
+          MIRROR='https://raw.githubusercontent.com/anggid/Brazilian-E-Commerce-Public-Dataset-by-Olist/21ede98d7bfe376b448672539b6157519aafdcae'
+          while read -r filename expected; do
+            echo "Downloading $filename..."
+            curl --fail --location --show-error --silent --retry 4 --max-time 120 "$MIRROR/$filename" -o "data/raw/$filename"
+            actual="$(git hash-object "data/raw/$filename")"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "Integrity check failed for $filename" >&2
+              exit 1
+            fi
+          done <<'FILES'
+          olist_customers_dataset.csv 1e7c3f923dede48035a8637dd28c357e154e5e75
+          olist_orders_dataset.csv 8133513ba3bcf576837c47aedd7fd81c5bb110fc
+          olist_order_items_dataset.csv dbdec13793b96ea5c00441f70d129d471c29bfda
+          olist_order_payments_dataset.csv b6c294a50fc1470abf2b8b09a33698c46eb6190d
+          olist_order_reviews_dataset.csv 5ee699e750acac0a6992b5a5fd95c9ed327d9870
+          olist_products_dataset.csv e5bd67eb7de63126b6b92aded29221303b124ed0
+          olist_sellers_dataset.csv 2569f1ebddc19018c38dd0ecf6386985ac96bc44
+          product_category_name_translation.csv efcaf018a602fd16c9b9e8624e302c5d09d24694
+          FILES
+          echo "Eight CSVs validated."
+      - name: Run SQL data pipeline and tests
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          python -m unittest discover -s tests -v
+          python src/build_database.py --data-dir data/raw --output data/olist.db
+          python src/check_quality.py --db data/olist.db --output reports/published/quality_checks.json
+          python src/run_analysis.py --db data/olist.db --output reports/published
+      - name: Add data provenance and interpretation notes
+        run: |
+          cat > reports/published/README.md <<'EOF'
+          # Verified reports from the Olist historical e-commerce dataset
+
+          These tables and figures were computed using this repository's SQL/Python code
+          on Olist CSV files from a GitHub mirror pinned to commit
+          21ede98d7bfe376b448672539b6157519aafdcae. Every source CSV
+          was checked against its pinned Git blob SHA before processing.
+
+          Original dataset: [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce).
+          License: CC BY-NC-SA 4.0. Attribution, noncommercial and share-alike terms
+          apply to original data and adapted dataset outputs.
+
+          Mirror: [anggid/Brazilian-E-Commerce-Public-Dataset-by-Olist](https://github.com/anggid/Brazilian-E-Commerce-Public-Dataset-by-Olist).
+          Original CSV files and the SQLite database are not published.
+
+          - [Actual executive metrics](SUMMARY.md)
+          - [Data quality audit](quality_checks.json)
+          - [Monthly sales chart](charts/monthly_sales.png)
+          - [Top categories chart](charts/top_categories.png)
+          - [Delivery reliability chart](charts/delivery_performance.png)
+          - [Metric definitions](../../docs/metrics.md)
+
+          Sales metrics are delivered item prices excluding freight, not net profit
+          or accounting revenue. Boundary months may be incomplete.
+          Associations do not imply causation.
+          EOF
+      - name: Commit generated reports and charts only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/published/
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish verified Olist metrics, CSV summaries and charts"
+            git push
+          fi
