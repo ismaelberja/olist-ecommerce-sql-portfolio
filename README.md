@@ -52,6 +52,31 @@ The following metrics were **computed using original Olist data**, not synthetic
 
 
 
+## Verified results from the real Olist dataset
+
+The pipeline ran on Olist's original public records (2016–2018). Figures below come from [the generated report](reports/published/SUMMARY.md), not from synthetic tests.
+
+| Metric | Verified result |
+|---|---:|
+| Delivered orders with items | **96,478** |
+| Unique buyers of delivered orders | **93,358** |
+| Gross delivered-item sales (excluding freight) | **BRL 13,221,498.11** |
+| Average order value (item prices only) | **BRL 137.04** |
+| Shipping charged on delivered orders | **BRL 2,202,965.54** |
+| Deliveries on or before the estimated date | **93.23%** |
+
+These are descriptive results from a historical marketplace dataset, not the company's current results. Gross item sales are **not** profit or recognized net revenue. Source definitions and denominator rules are documented in [docs/metrics.md](docs/metrics.md).
+
+### Data visualizations
+
+| Monthly sales | Top product categories |
+|---|---|
+| ![Monthly delivered-item sales](reports/published/charts/monthly_sales.png) | ![Top product categories by item sales](reports/published/charts/top_categories.png) |
+
+![On-time delivery by state](reports/published/charts/delivery_performance.png)
+
+Explore the [10 exported query result tables](reports/published/) and [data-quality checks](reports/published/quality_checks.json). The full-data audit found **zero foreign-key violations**. Time coverage and incomplete boundary months should be considered before drawing conclusions.
+
 ## Questions answered
 
 | # | Business question | SQL |
