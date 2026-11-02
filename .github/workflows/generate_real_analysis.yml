@@ -1,0 +1,58 @@
+name: Generate Olist reports from original data
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/generate_real_analysis.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Test SQL logic
+        run: python -m unittest discover -s tests -v
+      - name: Download original public Olist data
+        run: python src/download_olist_data.py
+      - name: Import into SQLite and run data quality audit
+        run: |
+          python src/build_database.py
+          python src/check_quality.py --output reports/published/quality_checks.json
+      - name: Generate verified SQL analytics and charts
+        run: python src/run_analysis.py --output reports/published
+      - name: Write data attribution
+        run: |
+          cat > reports/published/DATA_SOURCE.md <<'EOF'
+          # Original data source
+
+          Business metrics generated from the Brazilian E-Commerce Public Dataset by Olist (2016–2018).
+          Publisher's original files: https://github.com/olist/work-at-olist-data/tree/master/datasets
+          Original Kaggle publication: https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
+          License: CC BY-NC-SA 4.0 (Attribution-NonCommercial-ShareAlike).
+
+          Only derived results and visualizations are published here. Source CSVs and the
+          local database are excluded from version control.
+          EOF
+      - name: Commit real-data reports
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add reports/published/
+          if git diff --cached --quiet; then
+            echo 'Reports unchanged'
+          else
+            git commit -m 'Publish computed Olist KPIs and charts'
+            git push origin HEAD:main
+          fi
