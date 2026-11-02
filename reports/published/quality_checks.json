@@ -1,0 +1,15 @@
+{
+  "customers_rows": 99441,
+  "unique_customer_ids": 99441,
+  "unique_buyer_ids": 96096,
+  "orders_rows": 99441,
+  "delivered_orders": 96478,
+  "orders_without_items": 775,
+  "delivered_missing_actual_date": 8,
+  "delivered_missing_estimated_date": 0,
+  "duplicate_review_orders": 547,
+  "negative_item_prices": 0,
+  "invalid_review_scores": 0,
+  "negative_payment_values": 0,
+  "foreign_key_violations": 0
+}

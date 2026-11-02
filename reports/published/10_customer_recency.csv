@@ -1,0 +1,5 @@
+segment,buyers,avg_recency_days,avg_orders_per_buyer,avg_lifetime_sales_brl
+one_time_older,64069,357.9,1.0,137.09
+one_time_recent,26488,115.6,1.0,140.05
+repeat_older,1894,342.1,2.1,252.48
+repeat_recent,907,115.7,2.15,275.86
